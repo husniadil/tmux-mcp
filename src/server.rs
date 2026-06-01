@@ -1585,13 +1585,11 @@ impl TmuxMcpServer {
                         input.0.command_id
                     ))]));
                 }
-                (None, Some(recorded)) => {
-                    if socket.as_deref() != Some(recorded) {
-                        return Ok(CallToolResult::error(vec![Content::text(format!(
-                            "Socket does not match recorded socket for command {}",
-                            input.0.command_id
-                        ))]));
-                    }
+                (None, Some(recorded)) if socket.as_deref() != Some(recorded) => {
+                    return Ok(CallToolResult::error(vec![Content::text(format!(
+                        "Socket does not match recorded socket for command {}",
+                        input.0.command_id
+                    ))]));
                 }
                 _ => {}
             }
