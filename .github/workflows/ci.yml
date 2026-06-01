@@ -41,3 +41,19 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: Run tests
         run: cargo test --all-targets
+
+  integration:
+    name: Integration Tests (real tmux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install tmux
+        run: sudo apt-get update && sudo apt-get install -y tmux
+      - name: Show tmux version
+        run: tmux -V
+      - name: Run integration tests
+        env:
+          TMUX_MCP_INTEGRATION: "1"
+        run: cargo test --test integration
