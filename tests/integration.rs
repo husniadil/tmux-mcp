@@ -59,6 +59,7 @@ impl TmuxFixture {
         std::fs::write(
             &config,
             "set-option -g default-command \"/bin/bash --norc --noprofile\"\n\
+             set-option -g window-size manual\n\
              set-option -g default-size \"200x50\"\n",
         )
         .expect("write tmux config");

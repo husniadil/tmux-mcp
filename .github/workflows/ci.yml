@@ -53,6 +53,19 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y tmux
       - name: Show tmux version
         run: tmux -V
+      - name: Diagnose headless split
+        continue-on-error: true
+        run: |
+          S=/tmp/diag.sock
+          printf 'set -g window-size manual\nset -g default-size "200x50"\n' > /tmp/diag.conf
+          tmux -S "$S" -f /tmp/diag.conf new-session -d -x 200 -y 50 -s d
+          echo "window-size: $(tmux -S "$S" show-options -g window-size)"
+          echo "default-size: $(tmux -S "$S" show-options -g default-size)"
+          tmux -S "$S" list-windows -t d -F 'win #{window_width}x#{window_height}'
+          P=$(tmux -S "$S" list-panes -t d -F '#{pane_id}' | head -1)
+          echo "pane=$P"
+          tmux -S "$S" split-window -t "$P" -p 50 && echo "split -p 50 OK" || echo "split -p 50 FAILED ($?)"
+          tmux -S "$S" kill-server || true
       - name: Run integration tests
         env:
           TMUX_MCP_INTEGRATION: "1"
