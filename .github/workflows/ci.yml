@@ -56,16 +56,22 @@ jobs:
       - name: Diagnose headless split
         continue-on-error: true
         run: |
+          set +e
           S=/tmp/diag.sock
-          printf 'set -g window-size manual\nset -g default-size "200x50"\n' > /tmp/diag.conf
-          tmux -S "$S" -f /tmp/diag.conf new-session -d -x 200 -y 50 -s d
-          echo "window-size: $(tmux -S "$S" show-options -g window-size)"
-          echo "default-size: $(tmux -S "$S" show-options -g default-size)"
-          tmux -S "$S" list-windows -t d -F 'win #{window_width}x#{window_height}'
-          P=$(tmux -S "$S" list-panes -t d -F '#{pane_id}' | head -1)
-          echo "pane=$P"
-          tmux -S "$S" split-window -t "$P" -p 50 && echo "split -p 50 OK" || echo "split -p 50 FAILED ($?)"
-          tmux -S "$S" kill-server || true
+          echo "--- A: session with explicit -x/-y ---"
+          tmux -S "$S" new-session -d -x 200 -y 50 -s a
+          tmux -S "$S" list-windows -t a -F 'A win=#{window_width}x#{window_height}'
+          PA=$(tmux -S "$S" list-panes -t a -F '#{pane_id}' | head -1); echo "PA=$PA"
+          tmux -S "$S" split-window -t "$PA" -p 50; echo "A split -p 50 -> $?"
+          tmux -S "$S" split-window -t "$PA"; echo "A split (no -p) -> $?"
+          tmux -S "$S" split-window -t "$PA" -l 50%; echo "A split -l 50% -> $?"
+          tmux -S "$S" kill-server 2>/dev/null
+          echo "--- B: session with no size (current behaviour) ---"
+          tmux -S "$S" new-session -d -s b
+          tmux -S "$S" list-windows -t b -F 'B win=#{window_width}x#{window_height}'
+          PB=$(tmux -S "$S" list-panes -t b -F '#{pane_id}' | head -1)
+          tmux -S "$S" split-window -t "$PB" -p 50; echo "B split -p 50 -> $?"
+          tmux -S "$S" kill-server 2>/dev/null
       - name: Run integration tests
         env:
           TMUX_MCP_INTEGRATION: "1"

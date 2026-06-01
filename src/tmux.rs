@@ -1703,24 +1703,8 @@ pub async fn window_info(window_id: &str, socket: Option<&str>) -> Result<Window
 /// Create a new tmux session.
 pub async fn create_session(name: &str, socket: Option<&str>) -> Result<Session> {
     let format = "#{session_id}\t#{session_name}\t#{?session_attached,1,0}\t#{session_windows}";
-    // Detached sessions have no client to derive a size from; on tmux 3.4 this
-    // makes split-window fail with "size missing". Set an explicit headless size
-    // so pane operations work without an attached client (a client resizes the
-    // session on attach).
     let output = execute_tmux_with_socket(
-        &[
-            "new-session",
-            "-d",
-            "-x",
-            "200",
-            "-y",
-            "50",
-            "-P",
-            "-F",
-            format,
-            "-s",
-            name,
-        ],
+        &["new-session", "-d", "-P", "-F", format, "-s", name],
         socket,
     )
     .await?;
