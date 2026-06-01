@@ -418,6 +418,15 @@ or restrict sockets/sessions/panes explicitly.
   value containing a literal tab (rare, but possible in a pane title or path) can
   shift the remaining fields and produce a malformed or skipped row. This is a
   known limitation; titles/paths with embedded tabs are not supported.
+- **`paste-text` newline-holding depends on the receiving program.** Content is
+  wrapped in bracketed-paste markers (`ESC[200~`/`ESC[201~`), but holding embedded
+  newlines (instead of submitting line by line) only works when the program at the
+  pane understands those markers — zsh, bash ≥ 5.1, and most modern REPLs/editors.
+  Programs without bracketed-paste support — notably **bash 3.2, the default
+  `/bin/bash` on macOS** — ignore the markers, so each embedded newline acts as
+  Enter and a multi-line paste executes one line at a time. Use zsh (the macOS
+  login-shell default since Catalina) or a newer bash for the target pane when
+  multi-line input must stay un-submitted.
 
 ## License
 
