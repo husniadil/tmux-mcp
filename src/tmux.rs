@@ -91,21 +91,29 @@ fn get_socket_args(socket: Option<&str>) -> Vec<String> {
     }
 }
 
+/// Parse a `TMUX_MCP_SSH` value into argv tokens (e.g. `-i key user@host` ->
+/// `["-i", "key", "user@host"]`). Empty/whitespace-only yields None; unbalanced
+/// quotes are a hard error so a misconfigured connection string fails loudly.
+pub fn parse_ssh_args(value: &str) -> Result<Option<Vec<String>>> {
+    if value.trim().is_empty() {
+        return Ok(None);
+    }
+    let parts = shell_words::split(value).map_err(|e| Error::InvalidArgument {
+        message: format!("invalid TMUX_MCP_SSH: {e}"),
+    })?;
+    if parts.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(parts))
+    }
+}
+
 /// Get SSH arguments for tmux commands.
 /// If TMUX_MCP_SSH is set, returns parsed args (e.g. ["-i", "key", "user@host"]).
 fn get_ssh_args() -> Result<Option<Vec<String>>> {
     match std::env::var("TMUX_MCP_SSH") {
-        Ok(value) if !value.trim().is_empty() => {
-            let parts = shell_words::split(&value).map_err(|e| Error::InvalidArgument {
-                message: format!("invalid TMUX_MCP_SSH: {e}"),
-            })?;
-            if parts.is_empty() {
-                Ok(None)
-            } else {
-                Ok(Some(parts))
-            }
-        }
-        _ => Ok(None),
+        Ok(value) => parse_ssh_args(&value),
+        Err(_) => Ok(None),
     }
 }
 
@@ -2223,6 +2231,25 @@ mod tests {
     #[case("", None)]
     fn test_parse_tmux_version(#[case] input: &str, #[case] expected: Option<(u32, u32)>) {
         assert_eq!(parse_tmux_version(input), expected);
+    }
+
+    #[rstest]
+    #[case("user@host", Some(vec!["user@host"]))]
+    #[case("-i /path/key user@host", Some(vec!["-i", "/path/key", "user@host"]))]
+    #[case("-i \"my key\" user@host", Some(vec!["-i", "my key", "user@host"]))]
+    #[case("-p 2222 user@host", Some(vec!["-p", "2222", "user@host"]))]
+    #[case("", None)]
+    #[case("   ", None)]
+    fn test_parse_ssh_args_ok(#[case] input: &str, #[case] expected: Option<Vec<&str>>) {
+        let result = parse_ssh_args(input).expect("should parse");
+        let expected = expected.map(|v| v.into_iter().map(String::from).collect::<Vec<_>>());
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_parse_ssh_args_rejects_unbalanced_quotes() {
+        let err = parse_ssh_args("user@host 'unbalanced").unwrap_err();
+        assert!(matches!(err, Error::InvalidArgument { .. }));
     }
 
     #[rstest]

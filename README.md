@@ -309,6 +309,8 @@ tmux-mcp-rs --ssh "user@host"
 
 For extra SSH options, put them before the host (e.g. `--ssh "-i ~/.ssh/key user@host"`) or use `~/.ssh/config`. The destination should be the last token in the `--ssh` string.
 
+The connection string is split with shell-word rules (quotes honored); an unbalanced quote is rejected at startup. On the remote, the server runs `ssh <args> tmux ...`, and the tmux version check applies to the remote tmux. SSH parsing is unit-tested; end-to-end remote behavior is verified manually, not in CI (no remote host in the test environment).
+
 ### Remote + isolated (SSH + socket)
 
 Create a dedicated tmux server on the remote host, then point the MCP server at that socket:
