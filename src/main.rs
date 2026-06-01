@@ -147,6 +147,17 @@ async fn main() {
         std::env::set_var("TMUX_MCP_SSH", ssh);
     }
 
+    // This server targets tmux 3.x; older releases differ in output formats and
+    // flags (e.g. tmux 3.4 needs `-l <pct>%` rather than `-p <pct>` for splits).
+    // Fail fast on tmux 2.x so the failure is legible instead of mysterious
+    // mid-operation errors. If the version can't be determined, proceed.
+    if let Some((major, minor)) = crate::tmux::tmux_version().await {
+        if major < 3 {
+            eprintln!("Error: tmux-mcp-rs requires tmux 3.0 or newer; found tmux {major}.{minor}");
+            std::process::exit(1);
+        }
+    }
+
     let tracker = if cli.config.is_some() {
         CommandTracker::with_tracking(shell_type, tracking_config)
     } else {

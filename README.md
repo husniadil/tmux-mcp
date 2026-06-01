@@ -13,7 +13,10 @@ A Model Context Protocol (MCP) server for tmux, written in Rust. It lets AI assi
 - The user/developer can attach to the same session to watch or participate in real time.
 - Bonus: it also works with human-created sessions, including remote setups over SSH.
 
-Requires tmux installed and available on `PATH`.
+Requires **tmux 3.x** installed and available on `PATH`. The server checks the
+version on startup and refuses to run against tmux 2.x, whose output formats and
+split flags differ. CI exercises the integration suite on tmux 3.4; development
+is on 3.6.
 
 > [!WARNING]
 > Using this MCP allows the agent to escape the sandbox and its security limitations. Here be dragons!

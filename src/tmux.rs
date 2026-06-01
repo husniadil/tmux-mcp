@@ -306,6 +306,30 @@ pub async fn is_tmux_running() -> Result<bool> {
     }
 }
 
+/// Parse a `tmux -V` string like "tmux 3.4" or "tmux 3.6b" into (major, minor).
+/// Returns None when the version cannot be parsed.
+pub fn parse_tmux_version(output: &str) -> Option<(u32, u32)> {
+    let version = output.trim().strip_prefix("tmux ")?.trim();
+    let mut parts = version.split('.');
+    let major: u32 = parts.next()?.parse().ok()?;
+    // The minor field may carry a letter suffix (e.g. "6b") or "-rc"; keep the
+    // leading digits only.
+    let minor_raw = parts.next().unwrap_or("0");
+    let minor_digits: String = minor_raw
+        .chars()
+        .take_while(|c| c.is_ascii_digit())
+        .collect();
+    let minor: u32 = minor_digits.parse().unwrap_or(0);
+    Some((major, minor))
+}
+
+/// Query the running tmux version via `tmux -V`, honoring the socket/SSH path so
+/// a remote tmux reports its own version. Returns None if it cannot be determined.
+pub async fn tmux_version() -> Option<(u32, u32)> {
+    let output = execute_tmux(&["-V"]).await.ok()?;
+    parse_tmux_version(&output)
+}
+
 /// Parse `list-sessions -F '#{session_id}\t#{session_name}\t#{?session_attached,1,0}\t#{session_windows}'`
 pub fn parse_sessions(output: &str) -> Vec<Session> {
     if output.is_empty() {
@@ -2186,6 +2210,19 @@ mod tests {
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].name, "main");
         assert_eq!(result[1].name, "dev");
+    }
+
+    #[rstest]
+    #[case("tmux 3.4", Some((3, 4)))]
+    #[case("tmux 3.6b", Some((3, 6)))]
+    #[case("tmux 3.0a", Some((3, 0)))]
+    #[case("tmux 2.9", Some((2, 9)))]
+    #[case("tmux next-3.5", None)]
+    #[case("tmux 3", Some((3, 0)))]
+    #[case("garbage", None)]
+    #[case("", None)]
+    fn test_parse_tmux_version(#[case] input: &str, #[case] expected: Option<(u32, u32)>) {
+        assert_eq!(parse_tmux_version(input), expected);
     }
 
     #[rstest]
