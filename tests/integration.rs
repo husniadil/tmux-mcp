@@ -50,10 +50,16 @@ impl TmuxFixture {
         //
         // Force every pane on this isolated server to run `bash --norc --noprofile`
         // via `default-command`, aligning the runtime with the declared shell type.
+        //
+        // `default-size` gives the server a size for clientless sessions. On tmux
+        // 3.4 the default `window-size latest` leaves a never-attached session with
+        // no size, so split-window fails with "size missing" — a real terminal
+        // client would supply the size, so we emulate that headlessly.
         let config = socket_dir.path().join("tmux.conf");
         std::fs::write(
             &config,
-            "set-option -g default-command \"/bin/bash --norc --noprofile\"\n",
+            "set-option -g default-command \"/bin/bash --norc --noprofile\"\n\
+             set-option -g default-size \"200x50\"\n",
         )
         .expect("write tmux config");
 
@@ -65,6 +71,10 @@ impl TmuxFixture {
                 config.to_str().expect("config path"),
                 "new-session",
                 "-d",
+                "-x",
+                "200",
+                "-y",
+                "50",
                 "-s",
                 BOOT_SESSION,
             ])
