@@ -1784,8 +1784,10 @@ pub async fn split_pane(
     let size_str;
     if let Some(s) = size {
         if s > 0 && s < 100 {
-            size_str = s.to_string();
-            args.push("-p");
+            // tmux 3.4 rejects the legacy `-p <percent>` flag with "size missing";
+            // `-l <percent>%` is the modern form and works across tmux 3.x.
+            size_str = format!("{s}%");
+            args.push("-l");
             args.push(&size_str);
         }
     }

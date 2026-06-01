@@ -53,25 +53,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y tmux
       - name: Show tmux version
         run: tmux -V
-      - name: Diagnose headless split
-        continue-on-error: true
-        run: |
-          set +e
-          S=/tmp/diag.sock
-          echo "--- A: session with explicit -x/-y ---"
-          tmux -S "$S" new-session -d -x 200 -y 50 -s a
-          tmux -S "$S" list-windows -t a -F 'A win=#{window_width}x#{window_height}'
-          PA=$(tmux -S "$S" list-panes -t a -F '#{pane_id}' | head -1); echo "PA=$PA"
-          tmux -S "$S" split-window -t "$PA" -p 50; echo "A split -p 50 -> $?"
-          tmux -S "$S" split-window -t "$PA"; echo "A split (no -p) -> $?"
-          tmux -S "$S" split-window -t "$PA" -l 50%; echo "A split -l 50% -> $?"
-          tmux -S "$S" kill-server 2>/dev/null
-          echo "--- B: session with no size (current behaviour) ---"
-          tmux -S "$S" new-session -d -s b
-          tmux -S "$S" list-windows -t b -F 'B win=#{window_width}x#{window_height}'
-          PB=$(tmux -S "$S" list-panes -t b -F '#{pane_id}' | head -1)
-          tmux -S "$S" split-window -t "$PB" -p 50; echo "B split -p 50 -> $?"
-          tmux -S "$S" kill-server 2>/dev/null
       - name: Run integration tests
         env:
           TMUX_MCP_INTEGRATION: "1"
