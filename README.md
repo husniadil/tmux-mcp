@@ -404,6 +404,20 @@ and `get-command-result` must use the same socket (explicitly or via defaults), 
 To harden a deployment, flip specific `allow_*` flags, add deny/allow patterns,
 or restrict sockets/sessions/panes explicitly.
 
+## Notes and limitations
+
+- **Memory use is unbounded by design.** Paste buffers and command output live in
+  RAM (the buffer-explorer workflow deliberately keeps large data resident for
+  fast search/slicing). `paste-text`, `set-buffer`/`append-buffer`, and a single
+  command's captured output are not size-capped, so very large content consumes
+  host memory accordingly. Search streams large buffers via a temp file once they
+  exceed `search.streaming_threshold_bytes`, but the buffers themselves are not
+  evicted by size. Keep this in mind when pasting or capturing huge payloads.
+- **tmux output is parsed as tab-delimited fields.** Sessions, windows, panes,
+  clients, and buffers are read from `\t`-separated `-F` format strings. A field
+  value containing a literal tab (rare, but possible in a pane title or path) can
+  shift the remaining fields and produce a malformed or skipped row. This is a
+  known limitation; titles/paths with embedded tabs are not supported.
 
 ## License
 
